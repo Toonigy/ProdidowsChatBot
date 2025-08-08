@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem; /* Add some padding around the main container */
+        }
+        .chat-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 800px; /* Max width for a comfortable chat experience */
+            height: 90vh; /* Occupy most of the viewport height */
+            max-height: 800px; /* Maximum height for very large screens */
+        }
+        .chat-header {
+            background-color: #3b82f6; /* Blue header */
+            color: white;
+            padding: 1rem 1.5rem;
+            border-top-left-radius: 1.5rem;
+            border-top-right-radius: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .messages-area {
+            flex-grow: 1; /* Allows messages area to take available space */
+            padding: 1.5rem;
+            overflow-y: auto; /* Enable scrolling for messages */
+            display: flex;
+            flex-direction: column; /* Messages stack vertically */
+            gap: 0.75rem; /* Space between messages */
+            scroll-behavior: smooth; /* Smooth scrolling for new messages */
+        }
+        .message-bubble {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem; /* More rounded message bubbles */
+            word-wrap: break-word; /* Ensure long words break */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* Subtle bubble shadow */
+        }
+        .message-bubble.user {
+            background-image: linear-gradient(to right, #3b82f6, #2563eb); /* User messages blue gradient */
+            color: white;
+            align-self: flex-end; /* Align user messages to the right */
+            margin-left: auto; /* Push user messages to the right */
+        }
+        .message-bubble.bot {
+            background-color: #e2e8f0; /* Bot messages light gray */
+            color: #1a202c; /* Dark text for bot messages */
+            align-self: flex-start; /* Align bot messages to the left */
+            margin-right: auto; /* Push bot messages to the left */
+        }
+        .input-area {
+            display: flex;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e2e8f0;
+            background-color: #f8fafc; /* Lighter background for input area */
+            border-bottom-left-radius: 1.5rem;
+            border-bottom-right-radius: 1.5rem;
+        }
+        .input-field {
+            flex-grow: 1; /* Input field takes most space */
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e0;
+            margin-right: 0.75rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .send-button {
+            background-image: linear-gradient(to right, #22c55e, #16a34a); /* Green gradient for send button */
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 5px 15px rgba(34, 197, 94, 0.2); /* Green shadow */
+        }
+        .send-button:hover {
+            box-shadow: 0 5px 15px rgba(34, 197, 94, 0.4);
+            transform: translateY(-1px);
+        }
+        .logout-button {
+            background-color: #ef4444; /* Red for logout */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 5px rgba(239, 68, 68, 0.2);
+        }
+        .logout-button:hover {
+            background-color: #dc2626;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        }
+        /* Loading indicator styles */
+        .loading-dots {
+            display: flex;
+            align-items: flex-end;
+            margin-left: 0.5rem;
+            height: 1.25rem; /* Ensure dots have space */
+        }
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <h1 class="text-2xl font-bold">My Awesome Chatbot</h1>
+            <button id="logoutButton" class="logout-button">Logout</button>
+        </div>
+
+        <!-- Messages Display Area -->
+        <div id="messagesArea" class="messages-area">
+            <!-- Messages will be appended here by JavaScript -->
+            <!-- Example message:
+            <div class="message-bubble bot">Hello! How can I help you today?</div>
+            <div class="message-bubble user">I have a question about...</div>
+            -->
+            <div class="message-bubble bot">Hello! I'm your friendly chatbot. How can I assist you today?</div>
+            <div id="loadingIndicator" class="message-bubble bot hidden">
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Input Area -->
+        <div class="input-area">
+            <input type="text" id="messageInput" class="input-field" placeholder="Type your message here..." autocomplete="off">
+            <button id="sendMessageButton" class="send-button">Send</button>
+        </div>
+    </div>
+
+    <!-- Link to the external JavaScript file for chatbot logic -->
+    <script type="module" src="chatbot.js"></script>
+</body>
+</html>
